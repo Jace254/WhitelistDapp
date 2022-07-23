@@ -41,7 +41,7 @@ const runDapp = async (numBobs) => {
         }
     }
 
-    console.log(`Running contract with ${numBobs} Bob accounts`);
+    console.log(`\n\nRunning contract with ${numBobs} Bob accounts\n`);
     console.log("Starting balances:");
     await printBalances(numBobs);
 
