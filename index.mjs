@@ -2,7 +2,7 @@ import { loadStdlib } from '@reach-sh/stdlib';
 import * as backend from './build/index.main.mjs';
 const stdlib = loadStdlib(process.env);
 
-const startingBalanceA =  stdlib.parseCurrency(100);
+const startingBalanceA =  stdlib.parseCurrency(1000);
 const startingBalanceB =  stdlib.parseCurrency(20);
 
 const runDapp = async (numBobs) => {
@@ -26,14 +26,14 @@ const runDapp = async (numBobs) => {
 
     // whitelist parameters
     const maxEntries = 5;
-    const duration = 20;
+    const duration = 100;
     const whitelistParams = { maxEntries, duration};
 
     // print balance function
     const printBalances = async (nums) => {
         const printBalance = async (name, acc) => {
             const [balance, balance_JSH] = await stdlib.balancesOf(acc,[null, JSH]);
-            console.log(`  + ${name} has ${fmt(balance)} ${stdlib.standardUnit} and ${balance_JSH} JSH `);
+            console.log(`  [+] ${name} has ${fmt(balance)} ${stdlib.standardUnit} and ${balance_JSH} JSH `);
         } 
         await printBalance('Alice', aliceAcc);
         for (let i = 0; i < nums; i++) {
@@ -46,10 +46,10 @@ const runDapp = async (numBobs) => {
     await printBalances(numBobs);
 
     const whitelisted = [];
-    let isPaying = true;
     let doneJ = false;
-    let done;
     const paidArray = [];
+    let isPaying;
+
     // Bobs join the whitelist
     const startJoining = async () => {
         for(const [i,ctc] of bobCtcs.entries()){
@@ -66,9 +66,6 @@ const runDapp = async (numBobs) => {
                 console.log(` Bob Attacher #${i+1} cant join because whitelist is full`);
             }
         }
-        if (numBobs < maxEntries) {
-            await stdlib.wait(1);
-        }
         console.log("Balances after joining:");
         await printBalances(whitelisted.length);
         while(! doneJ) {
@@ -76,10 +73,27 @@ const runDapp = async (numBobs) => {
         }
     }
 
+    //Paying the Bobs
+    const payment = async () => {
+        if(whitelisted.length > 0){
+            const ctc = whitelisted[whitelisted.length -1];
+            try{
+                await ctc.apis.Bob.receiveToken();
+                
+            } catch(e) {
+                console.log(e)
+            }
+            paidArray.push(whitelisted.length);
+            whitelisted.pop();
+        }
+        await stdlib.wait(2);
+    }
 
-    //launch Contract
+
+    // launch Contract
     console.log(`Starting Whitelist...`)
     await aliceCtc.p.Alice({
+    ...stdlib.hasConsoleLogger,
     whitelistParams,
     token: () => {
         return token;
@@ -92,35 +106,26 @@ const runDapp = async (numBobs) => {
         }
         startJoining();
     },
-    seeJoin: (who, Address) => {
-        console.log(` Creator saw that ${who.slice(0,5)} joined with Address ${Address} `);
+    seeJoin: (index, Address) => {
+        console.log(` Creator saw that Bob Attacher #${index} joined with Address ${Address} `);
     },
     informTimeout: () => {
         console.log(`\n* Whitelist joining closed *\n`);
     },
     reward: () => {
-        if ( whitelisted.length > 1) {
-            done = true;
-        } else {
-            done = false;
-        }
-        paidArray.push(whitelisted.length);
-        const ctc = whitelisted[whitelisted.length -1];
-        whitelisted.pop();
-        ctc.apis.Bob.receiveToken();
-        return done;
+        payment();
     },
     paying: () => {
-        if(whitelisted.length > 0){
-            isPaying = true;
-            console.log(`Alice is paying`);
+        if(whitelisted.length > -1){
+            isPaying = true
+            return isPaying;
         } else {
             isPaying = false;
-            console.log(`Alice is not paying`);
+            return isPaying;
         }
-        return isPaying;
     },
     showOutcome: () => {
+        console.log("Balances after whitelist:");
         printBalances(paidArray.length);
     }
     })

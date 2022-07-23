@@ -8,13 +8,14 @@ const token = Object({ name_: Bytes(4),
 export const main = Reach.App(() => {
   setOptions({ untrustworthyMaps: true });
   const Alice = Participant('Alice', {
+    ...hasConsoleLogger,
     whitelistParams: Object({maxEntries: UInt, duration: UInt}),
     token: Fun([], token),
     ready: Fun([],Null),
-    seeJoin: Fun([Address,Address],Null),
+    seeJoin: Fun([UInt,Address],Null),
     informTimeout: Fun([],Null),
-    reward: Fun([], Bool),
-    paying: Fun([], Bool),
+    reward: Fun([], Null),
+    paying: Fun([],Bool),
     showOutcome: Fun([],Null),
   });
   const Bob = API('Bob', { 
@@ -32,15 +33,18 @@ export const main = Reach.App(() => {
   Alice.publish(name_,supply,unit,JSH,maxEntries,duration);
   commit();
   Alice.publish();
+  // Bobs attach to the contract
   Alice.interact.ready(); 
   
   const timeOut = relativeTime(duration);
   const entrants = new Set();
+
   // Bobs join the whitelist
   const 
   [ isOpen,
-    entries ] =
-    parallelReduce([ true, 0 ])
+    entries,
+    index, ] =
+    parallelReduce([ true, 0 , 1])
     .invariant(entries <= maxEntries)
     .while(isOpen && entries < maxEntries)
     .api_(Bob.join, () => {
@@ -49,72 +53,58 @@ export const main = Reach.App(() => {
         k(null);
         const who = this;
         entrants.insert(who);
-        Alice.interact.seeJoin(who,who);
-        return [ true, entries + 1 ];
+        Alice.interact.seeJoin(index,who);
+        return [ true, entries + 1 , index + 1];
       }];
     })
     .timeout(timeOut,() => {
       Alice.publish();
       Alice.interact.informTimeout();
-      return [false, entries];
+      return [false, entries, index];
     });
 
-  const payout = ((10/100) * supply)/entries;
 
-  var isPaying = true; 
+
+  // The entrants are paid tokens
+  var unpaidEntrants = entries; 
   invariant(entries <= maxEntries);
-  while(isPaying){
+  while(unpaidEntrants > 0){
 
     commit();
-    Alice.pay([[payout,JSH]]);
+    Alice.pay([[20,JSH]]);
+    Alice.interact.reward();
     
 
-    const 
-    [ paying,
-      done_,
-      bobA ] = 
-        parallelReduce([ true, false, Alice])
+    const [ bobA] = 
+        parallelReduce([Alice])
         .invariant(entries <= maxEntries)
-        .while(! done_)
-        .case(Alice, 
-          () => ({when : declassify(interact.paying())}),
-          (_) => {
-            commit();
-            Alice.only(() => {
-              const done = declassify(interact.reward());
-            })
-            Alice.publish(done);
-            const bob = parallelReduce(bobA)
-                        .invariant(isPaying == true)
-                        .while(bob == bobA)
-                        .api_(Bob.receiveToken, () => {
-                          check(entrants.member(this))
-                          return [ (k) => {
-                            k(null)
-                            entrants.remove(this);
-                            return this;
-                          } ];
-                        })
-            return [ done, done, bob];
+        .while(bobA == Alice && unpaidEntrants > 0)
+        // .case(Alice, 
+        //   ( ) => ({when: declassify(interact.paying())}),
+        //   (_) => [20, [payout,JSH] ],
+        //   (_) => { return [true, bobA]; }
+        // )
+        .api_(Bob.receiveToken, () => {
+          check(entrants.member(this))
+          return [ [0,[0,JSH]],(k) => {
+            k(null)
+            entrants.remove(this);
+            transfer([[balance(JSH),JSH]]).to(this);
+            return [this];
+          } ];
         })
-        .timeout(2000, () => {
-          Alice.publish();
-          return[paying,done_,bobA];
-        })
+        .timeout(false)
 
     commit();
     Alice.publish();
-
-    transfer(balance(JSH),JSH).to(bobA);
-    Alice.interact.showOutcome();
-
-    isPaying = paying;
+    unpaidEntrants = unpaidEntrants - 1;
     continue;
   }
+
   transfer(balance(JSH),JSH).to(Alice);
   transfer(balance()).to(Alice);
+  Alice.interact.showOutcome();
   commit();
-
 });
 
 
