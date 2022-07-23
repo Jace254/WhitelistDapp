@@ -1,5 +1,5 @@
 import { loadStdlib } from '@reach-sh/stdlib';
-import * as backend from './build/index.main.mjs';
+import * as backend from '../build/index.main.mjs';
 const stdlib = loadStdlib(process.env);
 
 const startingBalanceA =  stdlib.parseCurrency(1000);
