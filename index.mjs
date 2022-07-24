@@ -27,7 +27,7 @@ const runDapp = async (numBobs) => {
 
     // whitelist parameters
     const maxEntries = 5;
-    const duration = 100;
+    const duration = 50;
     const whitelistParams = { maxEntries, duration };
 
     // print balance function
