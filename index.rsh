@@ -47,7 +47,7 @@ export const main = Reach.App(() => {
     .invariant(entries <= maxEntries)
     .while(isOpen && entries < maxEntries)
     .api_(Bob.join, () => {
-      check(!entrants.member(this))
+      check(!entrants.member(this), "Participant is already in the whitelist");
       return [ (k) => {
         k(null);
         const who = this;
@@ -65,10 +65,10 @@ export const main = Reach.App(() => {
 
 
 
-  // The entrants are paid tokens
-  var unpaidEntrants = entries; 
+  // The Bobs are paid tokens
+  var unpaidBobs = entries; 
   invariant(entries <= maxEntries);
-  while(unpaidEntrants > 0){
+  while(unpaidBobs > 0){
 
     const payout = 20
     commit();
@@ -78,9 +78,9 @@ export const main = Reach.App(() => {
     const [ bobA] = 
         parallelReduce([Alice])
         .invariant(entries <= maxEntries)
-        .while(bobA == Alice && unpaidEntrants > 0)
+        .while(bobA == Alice && unpaidBobs > 0)
         .api_(Bob.receiveToken, () => {
-          check(entrants.member(this))
+          check(entrants.member(this), "Participant is not in the whitelist")
           return [(k) => {
             k(null)
             entrants.remove(this);
@@ -93,7 +93,7 @@ export const main = Reach.App(() => {
     Alice.publish();
     transfer([[balance(JSH),JSH]]).to(bobA);
 
-    unpaidEntrants = unpaidEntrants - 1;
+    unpaidBobs = unpaidBobs - 1;
     continue;
   }
 
