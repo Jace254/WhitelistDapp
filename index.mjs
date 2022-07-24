@@ -1,5 +1,5 @@
 import { loadStdlib } from '@reach-sh/stdlib';
-import * as backend from '../build/index.main.mjs';
+import * as backend from './build/index.main.mjs';
 const stdlib = loadStdlib(process.env);
 
 const startingBalanceA =  stdlib.parseCurrency(1000);
@@ -9,6 +9,7 @@ const runDapp = async (numBobs) => {
     const aliceAcc = await stdlib.newTestAccount(startingBalanceA);
     const aliceCtc = aliceAcc.contract(backend);
     const bobAccs = await stdlib.newTestAccounts(numBobs, startingBalanceB);
+    // Bobs attach to the contract
     const bobCtcs = bobAccs.map(B => B.contract(backend, aliceCtc.getInfo()));
     const bobArray = [];
     bobAccs.map(B => bobArray.push(B.getAddress()))
@@ -27,7 +28,7 @@ const runDapp = async (numBobs) => {
     // whitelist parameters
     const maxEntries = 5;
     const duration = 100;
-    const whitelistParams = { maxEntries, duration};
+    const whitelistParams = { maxEntries, duration };
 
     // print balance function
     const printBalances = async (nums) => {
@@ -93,7 +94,6 @@ const runDapp = async (numBobs) => {
     // launch Contract
     console.log(`Starting Whitelist...`)
     await aliceCtc.p.Alice({
-    ...stdlib.hasConsoleLogger,
     whitelistParams,
     token: () => {
         return token;

@@ -8,7 +8,6 @@ const token = Object({ name_: Bytes(4),
 export const main = Reach.App(() => {
   setOptions({ untrustworthyMaps: true });
   const Alice = Participant('Alice', {
-    ...hasConsoleLogger,
     whitelistParams: Object({maxEntries: UInt, duration: UInt}),
     token: Fun([], token),
     ready: Fun([],Null),
@@ -33,7 +32,7 @@ export const main = Reach.App(() => {
   Alice.publish(name_,supply,unit,JSH,maxEntries,duration);
   commit();
   Alice.publish();
-  // Bobs attach to the contract
+
   Alice.interact.ready(); 
   
   const timeOut = relativeTime(duration);
@@ -54,6 +53,7 @@ export const main = Reach.App(() => {
         const who = this;
         entrants.insert(who);
         Alice.interact.seeJoin(index,who);
+
         return [ true, entries + 1 , index + 1];
       }];
     })
@@ -70,26 +70,20 @@ export const main = Reach.App(() => {
   invariant(entries <= maxEntries);
   while(unpaidEntrants > 0){
 
+    const payout = 20
     commit();
-    Alice.pay([[20,JSH]]);
+    Alice.pay([[payout,JSH]]);
     Alice.interact.reward();
-    
 
     const [ bobA] = 
         parallelReduce([Alice])
         .invariant(entries <= maxEntries)
         .while(bobA == Alice && unpaidEntrants > 0)
-        // .case(Alice, 
-        //   ( ) => ({when: declassify(interact.paying())}),
-        //   (_) => [20, [payout,JSH] ],
-        //   (_) => { return [true, bobA]; }
-        // )
         .api_(Bob.receiveToken, () => {
           check(entrants.member(this))
-          return [ [0,[0,JSH]],(k) => {
+          return [(k) => {
             k(null)
             entrants.remove(this);
-            transfer([[balance(JSH),JSH]]).to(this);
             return [this];
           } ];
         })
@@ -97,6 +91,8 @@ export const main = Reach.App(() => {
 
     commit();
     Alice.publish();
+    transfer([[balance(JSH),JSH]]).to(bobA);
+
     unpaidEntrants = unpaidEntrants - 1;
     continue;
   }
