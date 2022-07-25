@@ -33,7 +33,9 @@ export const main = Reach.App(() => {
   commit();
   Alice.publish();
 
-  Alice.interact.ready(); 
+  Alice.only(() => {
+    interact.ready();
+  });
   
   const timeOut = relativeTime(duration);
   const entrants = new Set();

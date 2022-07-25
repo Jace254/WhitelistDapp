@@ -6,8 +6,10 @@ const startingBalanceA =  stdlib.parseCurrency(1000);
 const startingBalanceB =  stdlib.parseCurrency(20);
 
 const runDapp = async (numBobs) => {
+    console.log(`*     Creating the Alice Account    *`)
     const aliceAcc = await stdlib.newTestAccount(startingBalanceA);
     const aliceCtc = aliceAcc.contract(backend);
+    console.log(`\n*     Creating new Bob user accounts    *`)
     const bobAccs = await stdlib.newTestAccounts(numBobs, startingBalanceB);
     // Bobs attach to the contract
     const bobCtcs = bobAccs.map(B => B.contract(backend, aliceCtc.getInfo()));
