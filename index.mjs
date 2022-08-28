@@ -133,6 +133,6 @@ const runDapp = async (numBobs) => {
     doneJ = true;
 }
 
-await runDapp(5);
-await runDapp(3);
-await runDapp(6);
+await runDapp(5);   // running dapp with 5 Bobs
+await runDapp(3);   // running dapp with 3 Bobs
+await runDapp(6);   // running dapp with 6 Bobs
