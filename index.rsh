@@ -72,9 +72,9 @@ export const main = Reach.App(() => {
   invariant(entries <= maxEntries);
   while(unpaidBobs > 0){
 
-    const payout = 20
+    const payout = supply/entries;
     commit();
-    Alice.pay([[payout,JSH]]);
+    Alice.pay([100000000/entries,[payout,JSH]]);
     Alice.interact.reward();
 
     const [ bobA] = 
@@ -93,7 +93,7 @@ export const main = Reach.App(() => {
 
     commit();
     Alice.publish();
-    transfer([[balance(JSH),JSH]]).to(bobA);
+    transfer([balance(),[balance(JSH),JSH]]).to(bobA);
 
     unpaidBobs = unpaidBobs - 1;
     continue;
