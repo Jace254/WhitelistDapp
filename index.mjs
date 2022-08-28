@@ -92,44 +92,43 @@ const runDapp = async (numBobs) => {
         await stdlib.wait(2);
     }
 
-
     // launch Contract
     console.log(`Starting Whitelist...`)
     await aliceCtc.p.Alice({
-    whitelistParams,
-    token: () => {
-        return token;
-    },
-    ready: () => {
-        console.log(`*    Alice is ready to accept attachers     *`);
-        console.log(`Bob Address Array:`)
-        for(const bobAddress of bobArray){
-            console.log(` [${bobAddress}] ,\n`);
+        whitelistParams,
+        token: () => {
+            return token;
+        },
+        ready: () => {
+            console.log(`*    Alice is ready to accept attachers     *`);
+            console.log(`Bob Address Array:`)
+            for(const bobAddress of bobArray){
+                console.log(` [${bobAddress}] ,\n`);
+            }
+            startJoining();
+        },
+        seeJoin: (index, Address) => {
+            console.log(` Creator saw that Bob Attacher #${index} joined with Address ${Address} `);
+        },
+        informTimeout: () => {
+            console.log(`\n* Whitelist joining closed *\n`);
+        },
+        reward: () => {
+            payment();
+        },
+        paying: () => {
+            if(whitelisted.length > -1){
+                isPaying = true
+                return isPaying;
+            } else {
+                isPaying = false;
+                return isPaying;
+            }
+        },
+        showOutcome: () => {
+            console.log("Balances after whitelist:");
+            printBalances(paidArray.length);
         }
-        startJoining();
-    },
-    seeJoin: (index, Address) => {
-        console.log(` Creator saw that Bob Attacher #${index} joined with Address ${Address} `);
-    },
-    informTimeout: () => {
-        console.log(`\n* Whitelist joining closed *\n`);
-    },
-    reward: () => {
-        payment();
-    },
-    paying: () => {
-        if(whitelisted.length > -1){
-            isPaying = true
-            return isPaying;
-        } else {
-            isPaying = false;
-            return isPaying;
-        }
-    },
-    showOutcome: () => {
-        console.log("Balances after whitelist:");
-        printBalances(paidArray.length);
-    }
     })
     doneJ = true;
 }
